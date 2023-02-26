@@ -836,14 +836,20 @@ export class GDBDebugSession extends LoggingDebugSession {
     private gdbInitCommands: string[] = [];
     private startGdb(response: DebugProtocol.LaunchResponse): Promise<void> {
         const gdbExePath = this.args.gdbPath;
+        // const gdbExePath = "/home/sigurd/downloads/gcc-arm-none-eabi-10.3-2021.10/bin/arm-none-eabi-gdb";
         const gdbargs = ['-q', '--interpreter=mi2'].concat(this.args.debuggerArgs || []);
         if (!this.args.symbolFiles) {
             if (!path.isAbsolute(this.args.executable)) {
                 this.args.executable = path.join(this.args.cwd, this.args.executable);
             }
         }
+        console.log("yeee!");
+        this.handleMsg("log", "yehehe\n");
+        this.handleMsg("log", this.args.gdbPath + "\n");
         const dbgMsg = 'Launching GDB: ' + quoteShellCmdLine([gdbExePath, ...gdbargs]) + '\n';
+        this.handleMsg('log', "neh\n");
         this.handleMsg('log', dbgMsg);
+        this.handleMsg('log', "nå\n");
         if (!this.args.showDevDebugOutput) {
             this.handleMsg('stdout', '    IMPORTANT: Set "showDevDebugOutput": "raw" in "launch.json" to see verbose GDB transactions ' +
                 'here. Very helpful to debug issues or report problems\n');
@@ -852,6 +858,7 @@ export class GDBDebugSession extends LoggingDebugSession {
             const str = JSON.stringify({chainedConfigurations: this.args.chainedConfigurations}, null, 4);
             this.handleMsg('log', str + '\n');
         }
+        this.handleMsg('log', "nu\n");
 
         this.miDebugger = new MI2(gdbExePath, gdbargs);
         this.miDebugger.debugOutput = this.args.showDevDebugOutput as ADAPTER_DEBUG_MODE;
@@ -868,6 +875,7 @@ export class GDBDebugSession extends LoggingDebugSession {
             `interpreter-exec console "source ${this.args.extensionPath}/support/gdbsupport.init"`,
             `interpreter-exec console "source ${this.args.extensionPath}/support/gdb-swo.init"`
         ];
+        this.handleMsg('log', "neu\n");
         if (this.args.symbolFiles) {
             for (const symF of this.args.symbolFiles) {
                 let cmd = `interpreter-exec console "add-symbol-file \\"${symF.file}\\""`;
@@ -884,7 +892,10 @@ export class GDBDebugSession extends LoggingDebugSession {
         } else {
             this.gdbInitCommands.push(`file-exec-and-symbols "${this.args.executable}"`);
         }
+        this.handleMsg('log', "nåu\n");
+        this.handleMsg('log', this.gdbInitCommands + "\n");
         const ret = this.miDebugger.start(this.args.cwd, this.gdbInitCommands);
+        this.handleMsg('log', "nau\n");
         return ret;
     }
 

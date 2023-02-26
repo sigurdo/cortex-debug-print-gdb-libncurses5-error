@@ -8,6 +8,7 @@ import * as os from 'os';
 import { ServerConsoleLog } from '../server';
 import { hexFormat } from '../../frontend/utils';
 import { ADAPTER_DEBUG_MODE } from '../../common';
+import { Server } from 'http';
 const path = posix;
 
 export interface ReadMemResults {
@@ -72,13 +73,16 @@ export class MI2 extends EventEmitter implements IBackend {
     }
 
     public start(cwd: string, init: string[]): Promise<void> {
+        ServerConsoleLog("start", this.pid);
         return new Promise<void>(async (resolve, reject) => {
             const isLive = this.forLiveGdb ? 'Live ' : '';
             this.process = ChildProcess.spawn(this.application, this.args, { cwd: cwd, env: this.procEnv });
             this.pid = this.process.pid;
             this.process.stdout.on('data', this.stdout.bind(this));
             this.process.stderr.on('data', this.stderr.bind(this));
+            ServerConsoleLog("start Promise", this.pid);
             this.process.on('exit', (code: number, signal: string) => {
+                ServerConsoleLog("process.on(exit)", this.pid);
                 this.onExit(code, signal);
             });
             this.process.on('error', this.onError.bind(this));
@@ -86,12 +90,21 @@ export class MI2 extends EventEmitter implements IBackend {
                 ServerConsoleLog(isLive + `GDB started ppid=${process.pid} pid=${this.process.pid}`, this.process.pid);
             });
 
+            ServerConsoleLog("forLiveGdb: " + this.forLiveGdb, this.pid);
             if (!this.forLiveGdb) {
+                ServerConsoleLog("Starting timeout", this.pid);
                 let timeout = setTimeout(() => {
+                    ServerConsoleLog("timeout after 5 seconds", this.pid);
                     this.gdbStartError();
                     reject(new Error('Could not start GDB, no response from gdb'));
                     timeout = undefined;
                 }, 5000);
+                setTimeout(() => {
+                    ServerConsoleLog("timeout after 1 second", this.pid);
+                }, 1000);
+                setTimeout(() => {
+                    ServerConsoleLog("timeout after 1 millisecond", this.pid);
+                }, 1);
 
                 const swallOutput = this.debugOutput ? false : true;
                 let v;
@@ -144,6 +157,7 @@ export class MI2 extends EventEmitter implements IBackend {
     }
 
     private onError(err) {
+        ServerConsoleLog("onError", this.pid);
         this.emit('launcherror', err);
     }
 
@@ -175,7 +189,12 @@ export class MI2 extends EventEmitter implements IBackend {
     }
 
     private onExit(code: number, signal: string) {
+        ServerConsoleLog('Kaller gdbStartError', this.pid);
         this.gdbStartError();
+        ServerConsoleLog('Heyheyheyhey', this.pid);
+        this.process.stderr.setEncoding("utf-8");
+        // ServerConsoleLog('Hva står her? ' + this.process.stderr, this.pid);
+        // ServerConsoleLog('Og her? ' + this.process.stdout.read, this.pid);
         ServerConsoleLog('GDB: exited', this.pid);
         if (this.process) {
             this.process = null;
@@ -185,11 +204,15 @@ export class MI2 extends EventEmitter implements IBackend {
             const sigstr = signal ? `, signal: ${signal}` : '';
             const how = this.exiting ? '' : ((code || signal) ? ' unexpectedly' : '');
             const msg = `GDB session ended${how}. exit-code: ${codestr}${sigstr}\n`;
+            ServerConsoleLog('how:' + how, this.pid);
+            ServerConsoleLog('msg:' + msg, this.pid);
             this.emit('quit', how ? 'stderr' : 'stdout', msg);
         }
     }
 
     private gdbStartError() {
+        ServerConsoleLog("her nå", this.pid);
+        ServerConsoleLog("actuallyStarted: " + this.actuallyStarted, this.pid);
         if (!this.actuallyStarted) {
             this.log('log', 'Error: Unable to start GDB even after 5 seconds or it couldn\'t even start ' +
                 'Make sure you can start gdb from the command-line and run any command like "echo hello".\n');
